@@ -11,6 +11,21 @@ defmodule WorkoutWeb.PageController do
   def home(conn, _params) do
     render(conn, :register, layout: false)
   end
+  def menu(conn, _params) do
+    render(conn, :menu, layout: false)
+  end
+  def register_workout(conn,_params) do
+    render(conn, :register_workout, layout: false)
+  end
+  def stats(conn,_params) do
+    render(conn, :stats, layout: false)
+  end
+  def profil(conn,_params) do
+    IO.inspect(conn)
+
+    user_id = get_session(conn, :user_id)
+    render(conn,"profil.json",%{user: Accounts.get_user!(user_id)})
+  end
 
   def logout(conn, _params) do
     conn

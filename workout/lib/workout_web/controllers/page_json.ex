@@ -9,6 +9,16 @@ defmodule WorkoutWeb.PageJSON do
       }
     }
   end
+  def profil(%{user: user}) do
+    %{
+      message: "this is your user",
+      user: %{
+        id: user.id,
+        username: user.username,
+        password: user.password
+      }
+    }
+  end
   def error(%{ error: error}) do
     %{
       message: "User registered failed",

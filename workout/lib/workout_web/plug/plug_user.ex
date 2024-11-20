@@ -7,8 +7,6 @@ defmodule WorkoutWeb.Plug.PlugUser do
 
   def call(conn, _params) do
     user_id = Plug.Conn.get_session(conn, :user_id)
-    IO.puts("to jest user id")
-    IO.inspect(user_id)
       if user_id do
         Accounts.get_user!(user_id)
         |> case do

@@ -1,6 +1,7 @@
 defmodule WorkoutWeb.Router do
   use WorkoutWeb, :router
-alias WorkoutWeb.Plug.PlugUser
+  alias WorkoutWeb.Plug.PlugUser
+  alias WorkoutWeb.Plug.PlugWorkout
 
   pipeline :browser do
     plug :accepts, ["html"]
@@ -16,20 +17,33 @@ alias WorkoutWeb.Plug.PlugUser
     plug :fetch_session
     plug PlugUser
   end
+  pipeline :workout do
+    plug :accepts, ["json"]
+    plug :fetch_session
+    plug PlugWorkout
+  end
 
   scope "/", WorkoutWeb do
     pipe_through :browser
 
     get "/", PageController, :home
   end
+
   scope "/api", WorkoutWeb do
     pipe_through :api
-
 
     post "/register", PageController, :register
     post "/login", PageController, :login
     post "/logout", PageController, :logout
-    get "/getme", PageController, :getme
+
+  end
+  scope "/api/workout", WorkoutWeb do
+    pipe_through [:workout, :browser]
+
+    get "/menu", PageController, :menu
+    get "/register_workout", PageController, :register_workout
+    get "/profile", PageController, :profil
+    get "/stats", PageController, :stats
   end
 
   # Other scopes may use custom stacks.
