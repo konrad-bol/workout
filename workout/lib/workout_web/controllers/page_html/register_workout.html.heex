@@ -1,107 +1,213 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Register Workout</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background-color: #f5f5f5;
-    }
-    nav {
-      background-color: #007BFF;
-      color: white;
-      padding: 10px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    nav a {
-      color: white;
-      text-decoration: none;
-      margin-left: 10px;
-    }
-    nav a:hover {
-      text-decoration: underline;
-    }
-    main {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 90vh;
-    }
-    form {
-      background: white;
-      padding: 20px;
-      border-radius: 5px;
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    }
-    label, input {
-      display: block;
-      margin-bottom: 10px;
-    }
-    input {
-      padding: 8px;
-      width: 300px;
-    }
-    button {
-      all: unset;
-      padding: 10px 20px;
-      background-color: #007BFF;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-    }
-    button:hover {
-      background-color: #0056b3;
-    }
-  </style>
-</head>
-<body>
-  <nav>
-    <div>Workout Tracker</div>
-    <div>
-      <a href="profile">Profile</a>
-      <a href="register_workout">Register Workout</a>
-      <a href="stats">Stats</a>
-      <a href="/" id="logout">Logout</a>
-    </div>
-  </nav>
-  <main>
-    <form id="workoutForm">
-      <label for="exercise">Exercise Name:</label>
-      <input type="text" id="exercise" name="exercise" placeholder="Enter exercise" required>
-      
-      <label for="reps">Reps:</label>
-      <input type="number" id="reps" name="reps" placeholder="Enter reps" required>
-      
-      <button type="submit">Submit Workout</button>
-    </form>
-  </main>
-  <script src="/assets/accounts.js">
-    
-    document.getElementById('workoutForm').addEventListener('submit', async (event) => {
-      event.preventDefault();
-      const exercise = document.getElementById('exercise').value;
-      const reps = document.getElementById('reps').value;
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="csrf-token" content="{Plug.CSRFProtection.get_csrf_token()}" />
+    <link rel="stylesheet" href="/assets/carousel.css" />
 
-      const response = await fetch('http://localhost:4000/api/submitworkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ exercise, reps }),
-      });
-
-      if (response.ok) {
-        alert('Workout registered!');
-      } else {
-        alert('Failed to register workout.');
+    <title>Register Workout</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f5f5f5;
       }
-    });
-  </script>
-</body>
+      nav {
+        background-color: #007bff;
+        color: white;
+        padding: 10px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      nav a {
+        color: white;
+        text-decoration: none;
+        margin-left: 10px;
+      }
+      nav a:hover {
+        text-decoration: underline;
+      }
+      main {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 90vh;
+      }
+      form {
+        background: white;
+        width: 680px;
+        padding: 20px;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+      }
+      .podloga {
+        width: 240px; /* Szerokość paska */
+        height: 10px; /* Wysokość paska */
+        background-color: red; /* Kolor paska */
+        position: absolute; /* Pozycjonowanie względem kontenera */
+
+        left: 50%; /* Wyśrodkowanie poziome */
+        transform: translate(-50%, -50%); /* Dostosowanie środka elementu */
+      }
+      label,
+      input {
+        display: block;
+        margin-bottom: 10px;
+      }
+      input {
+        padding: 8px;
+        width: 300px;
+      }
+      button {
+        all: unset;
+        padding: 10px 20px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      button:hover {
+        background-color: #0056b3;
+      }
+    </style>
+    <script src="/assets/accounts.js" defer></script>
+    <script src="/assets/carousel.js" defer></script>
+  </head>
+  <body>
+    <nav>
+      <div>Workout Tracker</div>
+      <div>
+        <a href="profile">Profile</a>
+        <a href="register_workout">Register Workout</a>
+        <a href="stats">Stats</a>
+        <a href="/" id="logout">Logout</a>
+      </div>
+    </nav>
+    <main>
+      <form id="workoutForm" phx-submit="submit_workout">
+        <label for="exercise">Exercise Name:</label>
+        <div class="carousel-container">
+          <button
+            class="carousel-control prev-arrow"
+            type="button"
+            onclick="moveToPrevious()"
+          >
+            &#10094;
+          </button>
+          <div id="exercise-carousel" class="carousel">
+            <div class="carousel-inner">
+              <% exercises_with_index = Enum.with_index(@exercises)%> 
+              <%= for {exercise, index} <- exercises_with_index do%>
+              
+              <div
+                class="carousel-item"
+                onclick="moveToIndex(this.dataset.index)"
+              >
+                <h2><%= exercise %></h2>
+              </div>
+              <% end %>
+            </div>
+          </div>
+          <button
+            class="carousel-control next-arrow"
+            type="button"
+            onclick="moveToNext()"
+          >
+            &#10095;
+          </button>
+        </div>
+        <div class="counter">
+          <button type="button" onclick="decrementCounter()">-</button>
+          <span id="counter-value">1</span>
+          <button type="button" onclick="incrementCounter()">+</button>
+        </div>
+        <button type="button" onclick="addSet()">Add Set</button>
+        <button type="submit">Submit Workout</button>
+        <div id="currentWorkout">
+          <h3>Current Workout:</h3>
+          <ul id="workoutList"></ul>
+        </div>
+      </form>
+    </main>
+    <script>
+      document.querySelectorAll(".carousel-item").forEach((item, index) => {
+        item.dataset.index = index;
+      });
+      let currentWorkout = []; // Tablica przechowująca dodane serie
+
+      function addSet() {
+        const activeItem = document.querySelector(".carousel-item.active");
+        const exercise = activeItem
+          ? activeItem.querySelector("h2").textContent
+          : null;
+        const reps = parseInt(
+          document.getElementById("counter-value").textContent,
+          10
+        );
+
+        if (!exercise || !reps) {
+          alert("Select an exercise and set repetitions first!");
+          return;
+        }
+
+        // Dodaj nową serię do tablicy
+        currentWorkout.push({ exercise, reps });
+
+        // Wyświetl aktualny trening na stronie
+        updateWorkoutList();
+      }
+
+      function updateWorkoutList() {
+        const workoutList = document.getElementById("workoutList");
+        workoutList.innerHTML = ""; // Wyczyść listę
+
+        currentWorkout.forEach((set, index) => {
+          const listItem = document.createElement("li");
+          listItem.textContent = `${set.exercise} - ${set.reps} reps`;
+          workoutList.appendChild(listItem);
+        });
+      }
+
+      document
+  .getElementById("workoutForm")
+  .addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    if (currentWorkout.length === 0) {
+      alert("No sets added! Please add at least one set before submitting.");
+      return;
+    }
+
+    const csrfToken = document
+      .querySelector('meta[name="csrf-token"]')
+      .getAttribute("content");
+
+    const response = await fetch(
+      "http://localhost:4000/api/workout/submit_the_workout",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-csrf-token": csrfToken,
+        },
+        body: JSON.stringify({ workout: currentWorkout }),
+      }
+    );
+
+    if (response.ok) {
+      alert("Workout successfully submitted!");
+      currentWorkout = []; // Wyczyść tablicę po wysłaniu
+      updateWorkoutList(); // Zaktualizuj wyświetlaną listę
+    } else {
+      alert("Failed to submit workout.");
+    }
+  });
+
+    </script>
+  </body>
 </html>

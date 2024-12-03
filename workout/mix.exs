@@ -59,6 +59,7 @@ defmodule Workout.MixProject do
       {:dns_cluster, "~> 0.1.1"},
       {:bandit, "~> 1.2"},
       {:argon2_elixir, "~> 2.4.0"},
+      {:contex, "~> 0.5.0"}
     ]
   end
 

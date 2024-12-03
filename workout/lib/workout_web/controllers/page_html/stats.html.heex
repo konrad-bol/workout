@@ -4,12 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Dashboard</title>
+  <script src="/assets/accounts.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/date-fns"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
       margin: 0;
       padding: 0;
       background-color: #f5f5f5;
+    }
+    container{
+      height: 300px;
+      width: 600px;
     }
     nav {
       background-color: #007BFF;
@@ -61,9 +69,98 @@
     </div>
   </nav>
   <main>
-    <p>STATS</p>
+    <form id="statsForm" phx-submit ="submit_workout">
+      <label for="exercise">Exercise Name:</label>
+      <input type="text" id="exercise" name="exercise" placeholder="Enter exercise" required>
+
+      <button type="submit">Submit stats</button>
+    </form>
+    staty:
+    
+    <div class="container">
+    <canvas id="myChart" width="600px" height="300px"></canvas></div>
   </main>
-  <script src="/assets/accounts.js">
+
+    <script>
+    
+    document.getElementById('statsForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const exercise = document.getElementById('exercise').value;
+      
+      const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+      const response = await fetch('http://localhost:4000/api/workout/submit_stats', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json',
+      'x-csrf-token': csrfToken,},
+        body: JSON.stringify({ exercise }),
+      });
+
+      if (response.ok) {
+        location.reload();
+      } else {
+        alert('Failed to register workout.');
+      }
+    });
+    const ctx = document.getElementById('myChart').getContext('2d');
+
+    // Dane
+    const data = {
+      datasets: [{
+        label: 'Wartości',
+        data: <%=Workout.Workouts.get_list_user_series(@user_id,@exercise_id) |> raw() %>,
+        backgroundColor: 'rgba(75, 192, 192, 0.4)',
+        borderColor: 'rgba(75, 192, 192, 1)',
+        borderWidth: 2,
+        showLine: true, // Punkty bez łączących linii
+        pointRadius: 5 // Rozmiar punktów
+      }]
+    };
+    console.log(data)
+    // Konfiguracja wykresu
+    const config = {
+      type: 'line', // Wykres punktowy
+      data: data,
+      options: {
+        responsive: true,
+        scales: {
+          x: {
+            type: 'time', // Oś X w formacie czasowym
+            time: {
+              unit: 'day', // Grupowanie etykiet po dniach
+              displayFormats: {
+                day: 'DD.MM' // Format daty na osi X
+              }
+            },
+            title: {
+              display: true,
+              text: 'Data'
+            },
+            ticks: {
+              source: 'labels' // Tylko daty w danych będą wyświetlane
+            }
+          },
+          y: {
+            title: {
+              display: true,
+              text: 'Wartość'
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top'
+          },
+          title: {
+            display: true,
+            text: 'Wykres z równymi odstępami punktów w dniach'
+          }
+        }
+      }
+    };
+    new Chart(ctx, config);
   </script>
+
 </body>
 </html>

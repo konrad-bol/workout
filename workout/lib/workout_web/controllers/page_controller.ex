@@ -2,111 +2,84 @@ defmodule WorkoutWeb.PageController do
   use WorkoutWeb, :controller
   import Plug.Conn
   alias Workout.Accounts
+  alias Workout.Workouts
+  alias Workout.Workouts.Serie
   alias Workout.Accounts.User
   alias WorkoutWeb.Utilis
-
-  plug(:dont_exploit_me when action in [:register, :login])
-  plug(:ensure_authenticated when action in [:logout])
+  import Phoenix.HTML
+  alias Contex
+  alias WorkoutWeb.Router.Helpers, as: Routes
 
   def home(conn, _params) do
     render(conn, :register, layout: false)
   end
+
   def menu(conn, _params) do
     render(conn, :menu, layout: false)
   end
-  def register_workout(conn,_params) do
-    render(conn, :register_workout, layout: false)
-  end
-  def stats(conn,_params) do
-    render(conn, :stats, layout: false)
-  end
-  def profil(conn,_params) do
-    IO.inspect(conn)
 
-    user_id = get_session(conn, :user_id)
-    render(conn,"profil.json",%{user: Accounts.get_user!(user_id)})
-  end
-
-  def logout(conn, _params) do
+  def register_workout(conn, _params) do
+    exercises = Workouts.get_list_of_name
+    IO.inspect(exercises)
     conn
-    |> Plug.Conn.clear_session()
-    |> put_status(:ok)
-    |> render("logout.json", %{message: "Successfully logged out"})
+    |> assign(:exercises,exercises)
+    |> render(:register_workout, layout: false)
   end
 
-  def register(conn, input) do
-    case Accounts.create_user(input) do
-      {:ok, user} ->
+  def stats(conn, _params) do
+    user_id = get_session(conn, :user_id)
+    exercise_id = get_session(conn, :exercise_id) || 1
+    conn
+    |> assign(:exercise_id, exercise_id)
+    |> assign(:user_id, user_id)
+    |> render(:stats, layout: false)
+  end
+
+  def submit_stats(conn, %{"exercise" => exercise}) do
+    exercise = Workouts.get_id!(exercise)
+    IO.inspect(exercise.id)
+
+    case exercise.id do
+      nil ->
         conn
-        |> put_status(:created)
-        |> put_session(:user_id, user.id)
-        |> render("register.json", %{user: user})
+        |> put_flash(:error, "Invalid exercise name")
+        |> redirect(to: "/stats")
+
+      exercise_id ->
+        conn
+        |> put_session(:exercise_id, exercise_id)
+        |> redirect(to: "/api/workout/stats")
+    end
+  end
+
+  def submit_workout(conn,%{"workout"=> list} ) do
+    result =
+      Enum.reduce(list, %{}, fn %{"exercise" => exercise, "reps" => reps}, acc ->
+        Map.update(acc, exercise, [reps], fn reps_list -> [reps | reps_list] end)
+      end)
+    IO.inspect(result)
+    user_id = get_session(conn, :user_id)
+    result
+    |>Enum.map( fn {name,reps} ->
+      exercise = Workouts.get_id!(name)
+      attrs = %{
+        user_id: user_id,
+        exercise_id: exercise.id,
+        reps: reps,
+        date: NaiveDateTime.utc_now()
+      }
+
+    case Workouts.create_serie(attrs) do
+      {:ok, _series} -> nil
 
       {:error, changeset} ->
         conn
         |> put_status(:unprocessable_entity)
-        |> render("error.json", %{error: Utilis.format_chageset_errors(changeset)})
+        |> json(%{error: "Failed to add workout", details: changeset.errors})
     end
-  end
-
-  def login(conn, input) do
-    IO.puts("loguje sie")
-    IO.inspect(input)
-
-    User.login_changeset(input)
-    |> case do
-      %Ecto.Changeset{valid?: true, changes: %{password: password, username: username}} ->
-        IO.inspect(username)
-
-        case user = Accounts.get_by_username(username) do
-          %User{} ->
-            if Argon2.verify_pass(password, user.password) do
-              conn
-              |> put_status(:created)
-              |> put_session(:user_id, user.id)
-              |> render("login.json", %{user: user})
-            else
-              conn
-              |> put_status(401)
-              |> render("error.json", %{error: "wrong password"})
-            end
-
-          _ ->
-            conn
-            |> put_status(404)
-            |> render("error.json", %{error: "404"})
-        end
-
-      _ ->
-        conn
-        |> put_status(404)
-        |> render("error.json", %{error: "errors 404 "})
-    end
-  end
-
-  defp dont_exploit_me(conn, _opts) do
-    case conn.assigns.user_signed_in? do
-      true ->
-        conn
-        |> put_status(:unauthorized)
-        |> render("error.json", %{error: "You can't be logged in"})
-        |> halt()
-
-      _user ->
-        conn
-    end
-  end
-
-  defp ensure_authenticated(conn, _opts) do
-    case conn.assigns.user_signed_in? do
-      false ->
-        conn
-        |> put_status(:unauthorized)
-        |> render("error.json", %{error: "You must be logged in"})
-        |> halt()
-
-      _user ->
-        conn
-    end
+  end)
+  conn
+  |> put_status(:created)
+  |> json(%{message: "Workout added successfully!"})
   end
 end

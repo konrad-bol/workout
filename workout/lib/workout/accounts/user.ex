@@ -7,6 +7,7 @@ defmodule Workout.Accounts.User do
     field :username, :string
     field :password, :string
 
+    has_many :serie, Workout.Workouts.Serie
     timestamps(type: :utc_datetime)
   end
 

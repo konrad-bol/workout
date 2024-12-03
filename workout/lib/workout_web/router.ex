@@ -10,6 +10,7 @@ defmodule WorkoutWeb.Router do
     plug :put_root_layout, html: {WorkoutWeb.Layouts, :root}
     plug :protect_from_forgery
     plug :put_secure_browser_headers
+    plug Plug.CSRFProtection
   end
 
   pipeline :api do
@@ -32,9 +33,9 @@ defmodule WorkoutWeb.Router do
   scope "/api", WorkoutWeb do
     pipe_through :api
 
-    post "/register", PageController, :register
-    post "/login", PageController, :login
-    post "/logout", PageController, :logout
+    post "/register", UserController, :register
+    post "/login", UserController, :login
+    post "/logout", UserController, :logout
 
   end
   scope "/api/workout", WorkoutWeb do
@@ -44,6 +45,9 @@ defmodule WorkoutWeb.Router do
     get "/register_workout", PageController, :register_workout
     get "/profile", PageController, :profil
     get "/stats", PageController, :stats
+    post "/submit_the_workout", PageController, :submit_workout
+    post "/add_reps", PageController, :add_reps
+    post "/submit_stats", PageController, :submit_stats
   end
 
   # Other scopes may use custom stacks.
