@@ -76,7 +76,13 @@
       <button type="submit">Submit stats</button>
     </form>
     staty:
-    
+    <%= Workout.GenWorkout.get_series(String.to_atom("user_#{@user_id}"),@exercise)
+            |> case  do
+           %{}->[]
+            user_data -> user_data
+        end
+         %>
+
     <div class="container">
     <canvas id="myChart" width="600px" height="300px"></canvas></div>
   </main>
@@ -104,11 +110,31 @@
     });
     const ctx = document.getElementById('myChart').getContext('2d');
 
+  <%
+    user_data=Workout.GenWorkout.get_series(String.to_atom("user_#{@user_id}"), @exercise)
+    series_data = 
+    if(Map.equal?(user_data,%{})) do
+      []
+    else
+      user_data
+              |> Enum.flat_map(fn {date, values} -> 
+                  interval = 24 / (length(values)+1 )
+                  Enum.with_index(values, fn value, index -> 
+                    {NaiveDateTime.new!(date, ~T[00:00:00]) |> NaiveDateTime.add(trunc((index+1) * interval * 3600), :second), value}
+                  end)
+                end) 
+    end
+          
+  |>IO.inspect()
+ %>
+<%IO.inspect(series_data) %>
     // Dane
+    <%IO.inspect("dane ->") %>
+    <%IO.inspect(elem(raw(Enum.map(series_data, fn {datetime, value} -> %{x: datetime, y: value} end)),1)) %>
     const data = {
       datasets: [{
         label: 'Wartości',
-        data: <%=Workout.Workouts.get_list_user_series(@user_id,@exercise_id) |> raw() %>,
+        data: <%= raw(Jason.encode!(Enum.map(series_data, fn {datetime, value} -> %{x: datetime, y: value} end))) %>,
         backgroundColor: 'rgba(75, 192, 192, 0.4)',
         borderColor: 'rgba(75, 192, 192, 1)',
         borderWidth: 2,
@@ -123,13 +149,18 @@
       data: data,
       options: {
         responsive: true,
+        elements: {
+          point: {
+              hitRadius: 10 // Dodaj promień punktu, aby uniknąć błędu
+         }
+        },
         scales: {
           x: {
             type: 'time', // Oś X w formacie czasowym
             time: {
               unit: 'day', // Grupowanie etykiet po dniach
               displayFormats: {
-                day: 'DD.MM' // Format daty na osi X
+                day: 'dd.MM' // Format daty na osi X
               }
             },
             title: {
@@ -137,7 +168,10 @@
               text: 'Data'
             },
             ticks: {
-              source: 'labels' // Tylko daty w danych będą wyświetlane
+                        source: 'auto', // Automatyczne generowanie etykiet na osi X
+          autoSkip: true, // Pomija niektóre etykiety, aby uniknąć nakładania
+          maxRotation: 45, // Maksymalny obrót etykiet
+          minRotation: 0 // Minimalny obrót etykiet
             }
           },
           y: {

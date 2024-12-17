@@ -3,19 +3,17 @@ defmodule Workout.Workouts.Serie do
   import Ecto.Changeset
 
   schema "series" do
-    field :date, :naive_datetime
-    field :reps, {:array, :integer}
+    field :data, :map
 
 
     belongs_to :user, Workout.Accounts.User
-    belongs_to :exercise, Workout.Workouts.Exercise
     timestamps(type: :utc_datetime)
   end
 
   @doc false
   def changeset(serie, attrs) do
     serie
-    |> cast(attrs, [:reps, :date,:user_id,:exercise_id])
-    |> validate_required([:reps, :date])
+    |> cast(attrs, [ :data,:user_id])
+    |> validate_required([ :data,:user_id])
   end
 end

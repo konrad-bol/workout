@@ -20,10 +20,12 @@ defmodule Workout.Workouts do
   def list_exercise do
     Repo.all(Exercise)
   end
+
   def get_list_of_name do
-    Repo.all(from(e in Exercise,select: e.name) )
+    Repo.all(from(e in Exercise, select: e.name))
   end
-  def get_id!(exercise), do: Repo.get_by!(Exercise,name: exercise)
+
+  def get_id!(exercise), do: Repo.get_by!(Exercise, name: exercise)
 
   @doc """
   Gets a single exercises.
@@ -40,7 +42,6 @@ defmodule Workout.Workouts do
 
   """
   def get_exercise!(id), do: Repo.get!(Exercise, id)
-
 
   @doc """
   Creates a exercises.
@@ -121,10 +122,21 @@ defmodule Workout.Workouts do
   def list_series do
     Repo.all(Serie)
   end
-  def get_list_user_series(user_id,exercise_id) do
-    Repo.all(from( s in Serie, where: s.user_id==^user_id and s.exercise_id==^exercise_id,select: %{reps: s.reps, date: s.date}))
-    |>Enum.map(fn %{date: date,reps: reps} ->%{x: NaiveDateTime.to_iso8601(date),y: Enum.sum(reps)}  end)
+
+  def get_user_series(user_id) do
+    Repo.all(from(s in Serie, where: s.user_id == ^user_id, select: %{data: s.data}))
     |> Jason.encode!()
+  end
+  def get_user_series_data(user_id) do
+    Repo.all(from(s in Serie, where: s.user_id == ^user_id, select:  s.data))
+    |>case  do
+      [] ->%{}
+      [data]->data
+      |>IO.inspect()
+      |>Enum.map(fn {date,workout}->{Date.from_iso8601!(date) , workout} end)
+      |>Map.new()
+      |>IO.inspect()
+    end
   end
 
   @doc """
@@ -158,6 +170,7 @@ defmodule Workout.Workouts do
   def create_serie(attrs \\ %{}) do
     %Serie{}
     |> Serie.changeset(attrs)
+    |>IO.inspect()
     |> Repo.insert()
   end
 
@@ -173,10 +186,15 @@ defmodule Workout.Workouts do
       {:error, %Ecto.Changeset{}}
 
   """
-  def update_series(%Serie{} = serie, attrs) do
-    serie
-    |> Serie.changeset(attrs)
-    |> Repo.update()
+  def update_series(data,user_id) do
+    IO.inspect(Repo.get_by(Serie,user_id: user_id))
+    case Repo.get_by(Serie,user_id: user_id) do
+      nil -> create_serie(%{user_id: user_id ,data: data})
+      series ->
+        series
+        |> Serie.changeset(%{user_id: user_id,data: data})
+        |> Repo.update()
+    end
   end
 
   @doc """

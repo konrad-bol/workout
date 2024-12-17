@@ -17,7 +17,8 @@ defmodule Workout.Application do
       # Start a worker by calling: Workout.Worker.start_link(arg)
       # {Workout.Worker, arg},
       # Start to serve requests, typically the last entry
-      WorkoutWeb.Endpoint
+      WorkoutWeb.Endpoint,
+      {Workout.UserSupervisor,[]}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
